@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E2E Marketplace</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand" role="button" tabindex="0" id="goHome">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Magalu_logo.svg" alt="" class="brand-logo" onerror="this.style.display='none'" />
+        <span class="brand-name">E2E Marketplace</span>
+      </div>
+      <div class="search">
+        <input type="text" id="searchInput" placeholder="Buscar produtos" autocomplete="off" />
+        <div id="searchSuggest" class="suggestions" hidden></div>
+      </div>
+      <nav class="actions">
+        <button id="registerOpenBtn" class="btn btn-light">Crie sua conta</button>
+        <button id="loginOpenBtn" class="btn btn-light">Entrar</button>
+        <div id="userMenu" class="user-menu" hidden>
+          <span id="helloUser"></span>
+          <button id="btnPerfil" class="btn btn-light">Meu perfil</button>
+          <button id="btnLogout" class="btn btn-outline">Sair</button>
+        </div>
+        <button id="cartOpenBtn" class="btn btn-accent">Carrinho <span id="cartCount" class="badge">0</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container main">
+    <aside class="filters">
+      <h3>Filtros</h3>
+      <label>Categoria
+        <select id="filterCategory">
+          <option value="">Todas</option>
+        </select>
+      </label>
+      <label>Ordenar por
+        <select id="sortBy">
+          <option value="price_asc">Preço: menor → maior</option>
+          <option value="price_desc">Preço: maior → menor</option>
+          <option value="stock_desc">Estoque: maior → menor</option>
+          <option value="stock_asc">Estoque: menor → maior</option>
+        </select>
+      </label>
+      <button id="applyFilters" class="btn btn-primary full">Aplicar</button>
+    </aside>
+
+    <section class="content">
+      <div id="roleNotice" class="notice" hidden></div>
+
+      <div id="productGrid" class="grid"></div>
+
+      <div id="pagination" class="pagination"></div>
+
+      <section id="sellerPanel" class="panel" hidden>
+        <h2>Gestão de Produtos (Vendedor)</h2>
+        <div id="sellerProducts" class="grid"></div>
+      </section>
+
+      <section id="adminPanel" class="panel" hidden>
+        <div class="panel-header">
+          <h2>Fornecedores (Admin)</h2>
+          <button id="btnNewSupplier" class="btn btn-primary">Novo fornecedor</button>
+        </div>
+        <div id="supplierList" class="list"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <span>© 2025 E2E Marketplace — MVP educativo (sem backend)</span>
+    </div>
+  </footer>
+
+  <!-- Modals -->
+  <div id="modalBackdrop" class="backdrop" hidden></div>
+
+  <div id="modalLogin" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Entrar</h3>
+        <button class="icon-btn" data-close="modalLogin">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="loginForm" class="form">
+          <label>E-mail
+            <input type="email" id="loginEmail" required />
+          </label>
+          <label>Senha
+            <input type="password" id="loginPassword" required />
+          </label>
+          <button class="btn btn-primary full" type="submit">Entrar</button>
+        </form>
+        <div class="muted center">Não tem conta? <a href="#" id="loginToRegisterLink">Crie sua conta</a></div>
+        <div class="muted" style="margin-top:8px; font-size:12px;">
+          <div><strong>Usuários de teste</strong></div>
+          <div>Cliente: ana@e2e.com / Ana@Cliente123!</div>
+          <div>Vendedor: vini@e2e.com / Vini@Vendedor123!</div>
+          <div>Admin: admin@e2e.com / Admin@123456!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalRegister" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Criar conta</h3>
+        <button class="icon-btn" data-close="modalRegister">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="registerForm" class="form">
+          <label>Nome completo
+            <input type="text" id="regNome" required />
+          </label>
+          <label>E-mail
+            <input type="email" id="regEmail" required />
+          </label>
+          <label>Senha (mín. 10 c/ número e especial)
+            <input type="password" id="regSenha" minlength="10" required />
+          </label>
+          <label>Perfil
+            <select id="regPerfil" required>
+              <option value="cliente">Cliente</option>
+              <option value="vendedor">Vendedor</option>
+            </select>
+          </label>
+          <button class="btn btn-primary full" type="submit">Cadastrar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalPerfil" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Meu perfil</h3>
+        <button class="icon-btn" data-close="modalPerfil">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="perfilForm" class="form">
+          <label>Nome completo
+            <input type="text" id="perfilNome" required />
+          </label>
+          <label>E-mail (não editável)
+            <input type="email" id="perfilEmail" disabled />
+          </label>
+          <label>Nova senha (opcional)
+            <input type="password" id="perfilSenha" placeholder="Deixe em branco para manter" />
+          </label>
+          <div class="row gap">
+            <button class="btn btn-primary" type="submit">Salvar</button>
+          </div>
+          <div class="row gap" style="margin-top:8px;">
+            <label style="flex:1;">
+              Confirmação (digite "Excluir")
+              <input type="text" id="perfilDeleteConfirm" placeholder="Excluir" />
+            </label>
+            <button id="btnDeleteUser" class="btn btn-danger" type="button" disabled>Excluir conta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalProduct" class="modal" hidden>
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3 id="modalProductTitle"></h3>
+        <button class="icon-btn" data-close="modalProduct">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="product-detail">
+          <img id="modalProductImg" alt="Imagem do produto" />
+          <div>
+            <div id="modalProductDesc" class="muted"></div>
+            <div class="price-line">
+              <span id="modalProductPrice" class="price"></span>
+              <span id="modalProductStock" class="stock"></span>
+            </div>
+            <div class="row gap">
+              <input id="modalQty" type="number" min="1" value="1" />
+              <button id="modalAddToCart" class="btn btn-accent">Adicionar ao carrinho</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalCart" class="modal" hidden>
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3>Seu carrinho</h3>
+        <button class="icon-btn" data-close="modalCart">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-summary">
+          <div>Total: <strong id="cartTotal">R$ 0,00</strong></div>
+          <button id="btnCheckout" class="btn btn-primary">Finalizar compra</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalCheckout" class="modal" hidden>
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3>Finalizar compra</h3>
+        <button class="icon-btn" data-close="modalCheckout">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="checkoutForm" class="form">
+          <h4>Endereço de entrega</h4>
+          <label>Endereço completo
+            <input type="text" id="entregaEndereco" required />
+          </label>
+          <h4>Frete</h4>
+          <label>
+            <select id="freteTipo" required>
+              <option value="fixo">Fixo - R$ 19,90</option>
+              <option value="simples">Calculado simples</option>
+            </select>
+          </label>
+          <h4>Pagamento</h4>
+          <label>
+            <select id="pagTipo" required>
+              <option value="cartao">Cartão</option>
+              <option value="pix">PIX</option>
+            </select>
+          </label>
+          <div id="pagCartao" class="payment-card">
+            <label>Número do cartão
+              <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" />
+            </label>
+            <div class="row gap">
+              <label>Validade (MM/AA)
+                <input type="text" id="cardExpiry" placeholder="12/29" />
+              </label>
+              <label>CVV
+                <input type="text" id="cardCvv" placeholder="123" />
+              </label>
+            </div>
+          </div>
+          <div id="pagPix" class="payment-pix" hidden>
+            <div class="pix-area">
+              <div class="pix-qr" id="pixQr">QR</div>
+              <div id="pixCode" class="pix-code"></div>
+            </div>
+          </div>
+          <div class="checkout-summary">
+            <div>Subtotal: <span id="ckSubtotal">R$ 0,00</span></div>
+            <div>Frete: <span id="ckFrete">R$ 0,00</span></div>
+            <div>Total: <strong id="ckTotal">R$ 0,00</strong></div>
+          </div>
+          <button class="btn btn-accent full" type="submit">Pagar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfirm" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Confirmação</h3>
+        <button class="icon-btn" data-close="modalConfirm">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="confirmMessage"></div>
+        <div class="row gap end">
+          <button id="confirmNo" class="btn btn-light">Não</button>
+          <button id="confirmYes" class="btn btn-primary">Sim</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalStock" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalStockTitle">Adicionar estoque</h3>
+        <button class="icon-btn" data-close="modalStock">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form">
+          <label>Produto
+            <input type="text" id="stockProductName" disabled />
+          </label>
+          <label>Estoque atual
+            <input type="text" id="stockCurrent" disabled />
+          </label>
+          <label>Quantidade a adicionar (múltiplos de 10)
+            <input type="number" id="stockQty" step="10" min="10" max="1000" placeholder="10, 20, 30..." />
+          </label>
+          <div class="row gap end">
+            <button id="stockCancel" class="btn btn-light">Cancelar</button>
+            <button id="stockApply" class="btn btn-primary">Aplicar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+    // Defer loading to ensure DOM is ready before script runs
+    document.addEventListener('DOMContentLoaded', function () {
+      var s = document.createElement('script');
+      s.src = 'script.js';
+      document.body.appendChild(s);
+    });
+  </script>
+</body>
+</html>
+
+
