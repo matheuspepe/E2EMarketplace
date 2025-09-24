@@ -167,3 +167,4 @@ Projeto desenvolvido como MVP educacional para demonstração de funcionalidades
 ---
 
 **Nota**: Este é um projeto de demonstração sem backend real. Todos os dados são simulados e armazenados localmente no navegador.
+
