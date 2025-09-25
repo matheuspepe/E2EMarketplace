@@ -24,6 +24,168 @@ function showToast(message, type = 'info') {
   showToast._t = setTimeout(() => { toast.hidden = true; }, 3000);
 }
 
+// Replace native field validation tooltips with app toasts (Portuguese)
+function validationMessageForInput(el) {
+  if (!el) return 'Preencha o campo corretamente.';
+  const v = el.validity;
+  if (v.valueMissing) return 'Preencha este campo.';
+  if (v.typeMismatch) {
+    if (el.type === 'email') return 'Informe um e-mail válido.';
+    return 'Valor com formato inválido.';
+  }
+  if (v.patternMismatch) return 'Formato inválido.';
+  if (v.tooShort) return `Valor muito curto (mínimo ${el.getAttribute('minlength') || ''}).`;
+  if (v.tooLong) return `Valor muito longo (máximo ${el.getAttribute('maxlength') || ''}).`;
+  if (v.rangeUnderflow) return `Valor muito baixo (mínimo ${el.getAttribute('min') || ''}).`;
+  if (v.rangeOverflow) return `Valor muito alto (máximo ${el.getAttribute('max') || ''}).`;
+  if (v.stepMismatch) return 'Valor inválido.';
+  return 'Preencha o campo corretamente.';
+}
+
+// Intercept invalid events (capture phase) and show toast instead of browser bubble
+// Global inline error helpers (used by invalid handler and presentError)
+function clearFieldError(el) {
+  if (!el || !el.parentNode) return;
+  const next = el.nextSibling;
+  if (next && next.classList && next.classList.contains('field-error')) next.remove();
+  el.classList.remove('input-invalid');
+}
+
+function showFieldError(el, message) {
+  if (!el) return showToast(message, 'error');
+  clearFieldError(el);
+  const span = document.createElement('div');
+  span.className = 'field-error';
+  span.style.color = '#e74c3c';
+  span.style.fontSize = '0.9em';
+  span.style.marginTop = '4px';
+  span.textContent = message;
+  el.classList.add('input-invalid');
+  if (el.parentNode) el.parentNode.insertBefore(span, el.nextSibling);
+}
+
+function showFormError(formEl, message) {
+  if (!formEl) return showToast(message, 'error');
+  let banner = formEl.querySelector('.form-error');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.className = 'form-error';
+    banner.style.background = '#fee';
+    banner.style.color = '#900';
+    banner.style.padding = '8px';
+    banner.style.marginBottom = '8px';
+    formEl.insertBefore(banner, formEl.firstChild);
+  }
+  banner.textContent = message;
+}
+
+function clearFormError(formEl) {
+  if (!formEl) return;
+  const banner = formEl.querySelector('.form-error');
+  if (banner) banner.remove();
+}
+
+document.addEventListener('invalid', (e) => {
+  try {
+    e.preventDefault();
+    const el = e.target;
+    const msg = validationMessageForInput(el);
+    // prefer inline errors for login/register modals
+    const loginModal = document.getElementById('modalLogin');
+    const registerModal = document.getElementById('modalRegister');
+    if (loginModal && !loginModal.hidden && el.form && el.form.id === 'loginForm') {
+      showFieldError(el, msg);
+      if (el && typeof el.focus === 'function') el.focus();
+      return;
+    }
+    if (registerModal && !registerModal.hidden && el.form && el.form.id === 'registerForm') {
+      showFieldError(el, msg);
+      if (el && typeof el.focus === 'function') el.focus();
+      return;
+    }
+    // fallback to toast
+    showToast(msg, 'error');
+    if (el && typeof el.focus === 'function') el.focus();
+  } catch (err) {
+    showToast('Dados inválidos.', 'error');
+  }
+}, true);
+
+// Remove any visual invalid marker when user types
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!(el instanceof HTMLElement)) return;
+  if (typeof el.checkValidity === 'function' && el.checkValidity()) {
+    // clear any custom validity (if set elsewhere) and remove markers
+    if (typeof el.setCustomValidity === 'function') el.setCustomValidity('');
+    el.classList.remove('input-invalid');
+  }
+}, true);
+
+// Clear inline errors for a whole form
+function clearFormInlineErrors(formEl) {
+  if (!formEl) return;
+  const errors = formEl.querySelectorAll('.field-error');
+  errors.forEach(e => e.remove());
+  const banner = formEl.querySelector('.form-error'); if (banner) banner.remove();
+  const inputs = formEl.querySelectorAll('.input-invalid'); inputs.forEach(i => i.classList.remove('input-invalid'));
+}
+
+// Clear inline errors when opening/closing modals
+['modalLogin','modalRegister','modalPerfil'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('show', () => clearFormInlineErrors(el));
+});
+
+// Present user-friendly error messages in Portuguese
+function presentError(err, fallback = 'Ocorreu um erro.') {
+  const raw = err && err.message ? String(err.message) : '';
+  const map = [
+    { find: /failed to fetch/i, msg: 'Falha de rede. Verifique sua conexão.' },
+    { find: /networkerror/i, msg: 'Erro de rede. Tente novamente.' },
+    { find: /credentials/i, msg: 'Credenciais inválidas.' },
+    { find: /email already/i, msg: 'E-mail já cadastrado.' },
+    { find: /invalid/i, msg: 'Dados inválidos.' },
+  ];
+  for (const m of map) if (m.find.test(raw)) {
+    const msg = m.msg;
+    if (document.getElementById('modalLogin') && !document.getElementById('modalLogin').hidden) {
+      clearFieldError(document.getElementById('loginEmail'));
+      clearFieldError(document.getElementById('loginPassword'));
+      if (/email/i.test(raw) || /email/i.test(msg)) return showFieldError(document.getElementById('loginEmail'), msg);
+      if (/senha|password|credentials/i.test(raw) || /credenciais/i.test(msg)) return showFieldError(document.getElementById('loginPassword'), msg);
+      return showFormError(document.getElementById('loginForm'), msg);
+    }
+    if (document.getElementById('modalRegister') && !document.getElementById('modalRegister').hidden) {
+      clearFieldError(document.getElementById('regEmail'));
+      clearFieldError(document.getElementById('regSenha'));
+      if (/email/i.test(raw) || /email/i.test(msg)) return showFieldError(document.getElementById('regEmail'), msg);
+      if (/senha|password/i.test(raw) || /senha/i.test(msg)) return showFieldError(document.getElementById('regSenha'), msg);
+      return showFormError(document.getElementById('registerForm'), msg);
+    }
+    return showToast(m.msg, 'error');
+  }
+  const finalMsg = raw || fallback;
+  // If a login/register modal is open, try to attach message to a reasonable field
+  if (document.getElementById('modalLogin') && !document.getElementById('modalLogin').hidden) {
+    clearFieldError(document.getElementById('loginEmail'));
+    clearFieldError(document.getElementById('loginPassword'));
+    if (/email/i.test(finalMsg)) return showFieldError(document.getElementById('loginEmail'), finalMsg);
+    if (/senha|password|credenciais/i.test(finalMsg)) return showFieldError(document.getElementById('loginPassword'), finalMsg);
+    return showFormError(document.getElementById('loginForm'), finalMsg);
+  }
+  if (document.getElementById('modalRegister') && !document.getElementById('modalRegister').hidden) {
+    clearFieldError(document.getElementById('regEmail'));
+    clearFieldError(document.getElementById('regSenha'));
+    if (/email/i.test(finalMsg)) return showFieldError(document.getElementById('regEmail'), finalMsg);
+    if (/senha|password/i.test(finalMsg)) return showFieldError(document.getElementById('regSenha'), finalMsg);
+    return showFormError(document.getElementById('registerForm'), finalMsg);
+  }
+  // fallback: toast
+  return showToast(finalMsg, 'error');
+}
+
 let __booting = true;
 function openModal(id) {
   if (__booting) return; // prevent accidental opens during boot
@@ -131,11 +293,37 @@ function enforceSessionTimeout() {
 setInterval(enforceSessionTimeout, 60 * 1000);
 ['click', 'keydown', 'mousemove'].forEach(evt => document.addEventListener(evt, () => { if (session.userEmail) touchSession(); }));
 
+// Função para validar nome completo
+function validateFullName(name) {
+  if (!name) return false;
+  // Remove espaços extras e quebra em palavras
+  const words = name.trim().split(/\s+/);
+  // Precisa ter pelo menos 2 palavras (nome e sobrenome)
+  if (words.length < 2) return false;
+  // Regex que aceita letras, incluindo acentuadas, mas não números ou caracteres especiais
+  const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+$/;
+  // Cada palavra deve ter pelo menos 2 letras e passar no regex
+  return words.every(word => word.length >= 2 && nameRegex.test(word));
+}
+
+// Função para validar formato de e-mail
+function validateEmail(email) {
+  if (!email) return false;
+  // Regex que valida:
+  // - Deve ter caracteres antes do @
+  // - Deve ter um domínio após o @
+  // - Deve ter pelo menos uma extensão (.com, .br, etc)
+  // - A extensão deve ter entre 2 e 6 caracteres
+  // - Aceita múltiplos níveis de domínio (.com.br, .edu.br, etc)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\.[a-zA-Z]{2,6})?$/;
+  return emailRegex.test(email);
+}
+
 async function registerUser({ nome, email, senha, perfil }) {
   if (!nome || !email || !senha || !perfil) throw new Error('Preencha todos os campos.');
-  if (usuarios.some(u => u.email.toLowerCase() === email.toLowerCase())) throw new Error('E-mail já cadastrado.');
-  const strong = /^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{10,}$/;
-  if (!strong.test(senha)) throw new Error('Senha fraca. Min. 10 c/ número e especial.');
+  if (!validateFullName(nome)) throw new Error('Nome inválido');
+  const strong = /^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{10,}$/;
+  if (!strong.test(senha)) throw new Error('Senha deve ter no mínimo 10 caracteres, com número, letra e caractere especial.');
   const senhaHash = await sha256(senha);
   const user = { id: crypto.randomUUID(), nome, email, senhaHash, perfil };
   usuarios.push(user);
@@ -184,9 +372,29 @@ function deleteCurrentUser() {
 // ------------------------------ Products ------------------------------
 const PAGE_SIZE = 8;
 let state = { query: '', category: '', sortBy: 'price_asc', page: 1 };
+// External products API
+const EXTERNAL_PRODUCTS_API = 'https://catalogo-products.pages.dev/api/products?page=1&pageSize=50';
+let _apiProductsLoaded = false;
+// Categories allowed by the external API
+const ALLOWED_API_CATEGORIES = new Set(['moda','esportes','casa','eletronicos']);
+
+// Helper to normalize category strings (remove accents, lowercase)
+function normalizeCategory(s) {
+  if (!s) return '';
+  return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+}
+
+// Display labels for known categories
+const CATEGORY_LABELS = {
+  'eletronicos': 'Eletrônicos',
+  'moda': 'Moda',
+  'esportes': 'Esportes',
+  'casa': 'Casa'
+};
 
 function categoriesFromProducts() {
-  return Array.from(new Set(produtos.map(p => p.categoria))).sort();
+  // Return only the categories allowed by the external API (fixed list)
+  return Array.from(ALLOWED_API_CATEGORIES).sort();
 }
 
 function sortProducts(list, sortBy) {
@@ -206,17 +414,70 @@ function filterProducts() {
     const q = state.query.toLowerCase();
     list = list.filter(p => p.nome.toLowerCase().includes(q));
   }
-  if (state.category) list = list.filter(p => p.categoria === state.category);
+  if (state.category) {
+  const sel = normalizeCategory(state.category);
+  list = list.filter(p => normalizeCategory(p.categoria) === sel);
+  }
   return sortProducts(list, state.sortBy);
 }
 
 function renderCategories() {
   const sel = document.getElementById('filterCategory');
-  sel.innerHTML = '<option value="">Todas</option>' + categoriesFromProducts().map(c => `<option value="${c}">${c}</option>`).join('');
+  const cats = categoriesFromProducts();
+  sel.innerHTML = '<option value="">Todas</option>' + cats.map(c => {
+    const label = CATEGORY_LABELS[c] || (c.charAt(0).toUpperCase() + c.slice(1));
+    return `<option value="${c}">${label}</option>`;
+  }).join('');
 }
 
-function renderProductsGrid() {
+async function renderProductsGrid() {
   const grid = document.getElementById('productGrid');
+  if (!grid) return;
+
+  // If not loaded from API yet, fetch and map into internal `produtos` array
+  if (!_apiProductsLoaded) {
+    grid.innerHTML = '<div class="muted">Carregando produtos da API...</div>';
+    try {
+      const resp = await fetch(EXTERNAL_PRODUCTS_API, { headers: { accept: '*/*' } });
+      if (!resp.ok) throw new Error(`API retornou ${resp.status}`);
+      const data = await resp.json();
+      if (!Array.isArray(data.products)) throw new Error('Resposta da API sem campo products');
+
+      // Mapear formato da API para o formato interno usado pela aplicação
+      produtos = data.products.map(p => {
+        const rawCat = normalizeCategory(p.category || p.categoria || '');
+        const displayCat = CATEGORY_LABELS[rawCat] || (rawCat ? (rawCat.charAt(0).toUpperCase() + rawCat.slice(1)) : '');
+        // Calcular preços e desconto
+        const price = p.price || {};
+        const precoOriginal = price.original || 0;
+        const precoFinal = price.final ?? precoOriginal;
+        const descontoPercent = price.discount_percent || (precoOriginal && precoFinal < precoOriginal ? 
+          Math.round((1 - precoFinal/precoOriginal) * 100) : 0);
+        
+        return {
+          id: p.id,
+          nome: p.title || p.name || (`Produto ${p.id}`),
+          categoria: displayCat,
+          preco: precoFinal,
+          precoOriginal: precoOriginal,
+          descontoPercent: descontoPercent,
+          estoque: (p.stock && (p.stock.quantity ?? p.stock.qtd)) || 0,
+          descricao: p.description || p.descricao || '',
+          imagem: p.imageUrl || p.image || `https://via.placeholder.com/320x200?text=${encodeURIComponent(p.title || p.id)}`,
+          ativo: true,
+          fornecedorId: null,
+        };
+      });
+
+      _apiProductsLoaded = true;
+      // Do not persist to localStorage to avoid overwriting seeded data
+    } catch (err) {
+      grid.innerHTML = `<div class="muted">Erro ao carregar produtos da API: ${err.message}</div>`;
+      return;
+    }
+  }
+
+  // Now render using existing local filtering/pagination logic
   const list = filterProducts();
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if (state.page > totalPages) state.page = totalPages;
@@ -228,10 +489,21 @@ function renderProductsGrid() {
       <div class="pad">
         <div>${p.nome}</div>
         <div class="muted">${p.categoria}</div>
-        <div class="row"><span class="price">${formatCurrency(p.preco)}</span><span class="stock">Estoque: ${p.estoque}</span></div>
+        <div class="row">
+          ${p.descontoPercent > 0 ? `
+            <div class="price-info">
+              <span class="original-price">${formatCurrency(p.precoOriginal)}</span>
+              <span class="discount-tag">-${p.descontoPercent}%</span>
+              <span class="price">${formatCurrency(p.preco)}</span>
+            </div>
+          ` : `
+            <span class="price">${formatCurrency(p.preco)}</span>
+          `}
+          <span class="stock">Estoque: ${p.estoque}</span>
+        </div>
         <div class="row">
           <button class="btn btn-accent" data-add="${p.id}">Adicionar</button>
-          <button class="btn btn-light" data-detail="${p.id}">Detalhes</button>
+          <button class="btn btn-dark" data-detail="${p.id}">Detalhes</button>
         </div>
       </div>
     </div>
@@ -621,11 +893,52 @@ document.getElementById('searchSuggest').addEventListener('click', (e) => {
   if (t.dataset.suggest) { openProductModal(t.dataset.suggest); }
 });
 
+// Validação em tempo real para os campos do formulário de login
+function setupLoginFormValidation() {
+  const emailInput = document.getElementById('loginEmail');
+  const senhaInput = document.getElementById('loginPassword');
+  
+  // Validação do e-mail em tempo real
+  emailInput.addEventListener('input', () => {
+    const email = emailInput.value.trim();
+    clearFieldError(emailInput);
+    if (email && !validateEmail(email)) {
+      showFieldError(emailInput, 'E-mail inválido. Use um formato válido (exemplo@dominio.com)');
+    }
+  });
+
+  // Validação da senha em tempo real
+  senhaInput.addEventListener('input', () => {
+    clearFieldError(senhaInput);
+    if (senhaInput.value.length === 0) {
+      showFieldError(senhaInput, 'A senha é obrigatória');
+    }
+  });
+}
+
 // Login form
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim();
-  const senha = document.getElementById('loginPassword').value;
+  const emailInput = document.getElementById('loginEmail');
+  const senhaInput = document.getElementById('loginPassword');
+  const email = emailInput.value.trim();
+  const senha = senhaInput.value;
+
+  // Limpa erros anteriores
+  clearFieldError(emailInput);
+  clearFieldError(senhaInput);
+
+  // Validações antes de tentar login
+  if (!validateEmail(email)) {
+    showFieldError(emailInput, 'E-mail inválido. Use um formato válido (exemplo@dominio.com)');
+    return;
+  }
+
+  if (!senha) {
+    showFieldError(senhaInput, 'A senha é obrigatória');
+    return;
+  }
+
   try {
     const user = await login({ email, senha });
     closeModal('modalLogin');
@@ -633,18 +946,101 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     if (user.perfil === 'cliente') { showToast('Bem-vindo à loja!', 'success'); }
     else if (user.perfil === 'vendedor') { showToast('Bem-vindo, vendedor!', 'success'); }
     else { showToast('Bem-vindo, admin!', 'success'); }
-  } catch (err) { showToast(err.message || 'Erro ao entrar', 'error'); }
+  } catch (err) { 
+    showFieldError(senhaInput, 'E-mail ou senha incorretos');
+  }
 });
+
+// Validação em tempo real para os campos do formulário de registro
+function setupRegisterFormValidation() {
+  const nomeInput = document.getElementById('regNome');
+  const emailInput = document.getElementById('regEmail');
+  const senhaInput = document.getElementById('regSenha');
+  
+  // Validação do nome em tempo real
+  nomeInput.addEventListener('input', () => {
+    const nome = nomeInput.value.trim();
+    clearFieldError(nomeInput);
+    if (nome && !validateFullName(nome)) {
+      showFieldError(nomeInput, 'Nome inválido. Digite nome e sobrenome, sem números ou caracteres especiais.');
+    }
+  });
+
+  // Validação do e-mail em tempo real
+  emailInput.addEventListener('input', async () => {
+    const email = emailInput.value.trim();
+    clearFieldError(emailInput);
+    if (email) {
+      if (!validateEmail(email)) {
+        showFieldError(emailInput, 'E-mail inválido. Use um formato válido (exemplo@dominio.com)');
+      } else if (usuarios.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+        showFieldError(emailInput, 'Este e-mail já está cadastrado.');
+      }
+    }
+  });
+
+  // Validação da senha em tempo real
+  senhaInput.addEventListener('input', () => {
+    const senha = senhaInput.value;
+    clearFieldError(senhaInput);
+    if (senha) {
+      const strong = /^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{10,}$/;
+      if (!strong.test(senha)) {
+        showFieldError(senhaInput, 'Senha fraca. Use ao menos 10 caracteres com números e caracteres especiais.');
+      }
+    }
+  });
+}
 
 // Register form
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const nome = document.getElementById('regNome').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const senha = document.getElementById('regSenha').value;
+  const nomeInput = document.getElementById('regNome');
+  const emailInput = document.getElementById('regEmail');
+  const senhaInput = document.getElementById('regSenha');
+  const nome = nomeInput.value.trim();
+  const email = emailInput.value.trim();
+  const senha = senhaInput.value;
   const perfil = document.getElementById('regPerfil').value;
-  try { await registerUser({ nome, email, senha, perfil }); showToast('Conta criada. Faça login.', 'success'); closeModal('modalRegister'); openModal('modalLogin'); }
-  catch (err) { showToast(err.message || 'Erro no cadastro', 'error'); }
+  
+  // Limpa todos os erros anteriores
+  clearFieldError(nomeInput);
+  clearFieldError(emailInput);
+  clearFieldError(senhaInput);
+  
+  try {
+    // Validação do nome antes de tentar registrar
+    if (!validateFullName(nome)) {
+      showFieldError(nomeInput, 'Nome inválido. Digite nome e sobrenome, sem números ou caracteres especiais.');
+      return;
+    }
+    
+    // Validação do formato do e-mail
+    if (!validateEmail(email)) {
+      showFieldError(emailInput, 'E-mail inválido. Use um formato válido (exemplo@dominio.com)');
+      return;
+    }
+    
+    // Verifica se o e-mail já está cadastrado antes de tentar registrar
+    if (usuarios.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+      showFieldError(emailInput, 'Este e-mail já está cadastrado.');
+      return;
+    }
+    
+    await registerUser({ nome, email, senha, perfil });
+    showToast('Conta criada. Faça login.', 'success');
+    closeModal('modalRegister');
+    openModal('modalLogin');
+  } catch (err) {
+    const errorMessage = err.message;
+    if (errorMessage === 'Nome inválido') {
+      showFieldError(document.getElementById('regNome'), 'Nome inválido. Digite nome e sobrenome, sem números ou caracteres especiais.');
+    } else if (errorMessage === 'E-mail já cadastrado') {
+      showFieldError(document.getElementById('regEmail'), 'Este e-mail já está cadastrado.');
+    } else {
+      presentError(err, 'Erro no cadastro.');
+    }
+  }
 });
 
 // Perfil form
@@ -653,7 +1049,7 @@ document.getElementById('perfilForm').addEventListener('submit', async (e) => {
   const nome = document.getElementById('perfilNome').value.trim();
   const novaSenha = document.getElementById('perfilSenha').value;
   try { await updateProfile({ nome, novaSenha }); showToast('Perfil atualizado.', 'success'); closeModal('modalPerfil'); renderAuthUI(); }
-  catch (err) { showToast(err.message || 'Erro ao salvar perfil', 'error'); }
+  catch (err) { presentError(err, 'Erro ao salvar perfil.'); }
 });
 
 document.getElementById('perfilDeleteConfirm').addEventListener('input', () => {
@@ -666,7 +1062,7 @@ document.getElementById('btnDeleteUser').addEventListener('click', async () => {
   const ok = await confirmDialog('Excluir sua conta? Esta ação é permanente.');
   if (!ok) return;
   try { deleteCurrentUser(); showToast('Conta excluída.', 'success'); closeModal('modalPerfil'); }
-  catch (err) { showToast(err.message || 'Erro ao excluir conta', 'error'); }
+  catch (err) { presentError(err, 'Erro ao excluir conta.'); }
 });
 
 // Checkout submit
@@ -716,6 +1112,10 @@ function hideAllModalsOnStart() {
   document.getElementById('modalBackdrop').hidden = true;
   ['modalLogin','modalRegister','modalPerfil','modalProduct','modalCart','modalCheckout','modalConfirm']
     .forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
+  
+  // Configura validações em tempo real para os formulários
+  setupRegisterFormValidation();
+  setupLoginFormValidation();
 }
 
 // Apply initial state (avoid double init)
@@ -729,5 +1129,3 @@ if (Storage.get('seeded_v1', false)) {
   // seedIfEmpty calls initUI asynchronously; ensure we finalize after a tick
   setTimeout(() => { hideAllModalsOnStart(); __booting = false; }, 0);
 }
-
-

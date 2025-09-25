@@ -90,12 +90,12 @@
         <button class="icon-btn" data-close="modalLogin">✕</button>
       </div>
       <div class="modal-body">
-        <form id="loginForm" class="form">
+        <form id="loginForm" class="form" autocomplete="on">
           <label>E-mail
-            <input type="email" id="loginEmail" required />
+            <input type="email" id="loginEmail" name="email" autocomplete="email" required />
           </label>
           <label>Senha
-            <input type="password" id="loginPassword" required />
+            <input type="password" id="loginPassword" name="current-password" autocomplete="current-password" required />
           </label>
           <button class="btn btn-primary full" type="submit">Entrar</button>
         </form>
@@ -117,15 +117,15 @@
         <button class="icon-btn" data-close="modalRegister">✕</button>
       </div>
       <div class="modal-body">
-        <form id="registerForm" class="form">
+        <form id="registerForm" class="form" autocomplete="on">
           <label>Nome completo
-            <input type="text" id="regNome" required />
+            <input type="text" id="regNome" name="name" autocomplete="name" required />
           </label>
           <label>E-mail
-            <input type="email" id="regEmail" required />
+            <input type="email" id="regEmail" name="email" autocomplete="email" required />
           </label>
-          <label>Senha (mín. 10 c/ número e especial)
-            <input type="password" id="regSenha" minlength="10" required />
+          <label>Senha (mín. de 10 caracteres, com número, letra e caractere especial)
+            <input type="password" id="regSenha" name="new-password" autocomplete="new-password" minlength="10" required />
           </label>
           <label>Perfil
             <select id="regPerfil" required>
@@ -151,10 +151,10 @@
             <input type="text" id="perfilNome" required />
           </label>
           <label>E-mail (não editável)
-            <input type="email" id="perfilEmail" disabled />
+            <input type="email" id="perfilEmail" name="email" autocomplete="email" disabled />
           </label>
           <label>Nova senha (opcional)
-            <input type="password" id="perfilSenha" placeholder="Deixe em branco para manter" />
+            <input type="password" id="perfilSenha" name="new-password" autocomplete="new-password" placeholder="Deixe em branco para manter" />
           </label>
           <div class="row gap">
             <button class="btn btn-primary" type="submit">Salvar</button>
@@ -322,5 +322,3 @@
   </script>
 </body>
 </html>
-
-
