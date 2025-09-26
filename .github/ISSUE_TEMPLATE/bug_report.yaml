@@ -1,8 +1,7 @@
-# .github/ISSUE_TEMPLATE/bug-report.yml
-name: "🐞 Bug Report"
-description: "Relatar um bug encontrado durante os testes"
-title: "[BUG] <Título curto e objetivo>"
-labels: ["bug", "QA"]
+name: Bug Report
+description: Relatar um bug encontrado durante os testes
+title: "[BUG]: "
+labels: ["bug"]
 assignees: []
 
 body:
