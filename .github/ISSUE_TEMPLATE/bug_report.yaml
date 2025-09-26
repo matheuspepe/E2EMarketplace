@@ -59,9 +59,10 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: evidencia
     attributes:
       label: 📎 Evidências
       description: Se possível, adicione prints, logs ou links de vídeo.
       placeholder: "URL ou caminho do arquivo"
+
