@@ -1,0 +1,26 @@
+name: "✨ Nova Feature"
+description: "Descrever uma nova funcionalidade baseada em histórias de usuário"
+title: "[FEATURE] <Título curto e objetivo>"
+labels: ["feature", "story"]
+assignees: []
+
+body:
+  - type: textarea
+    id: historia
+    attributes:
+      label: 📖 História de Usuário
+      description: Descreva no formato "Como <persona> quero <ação> para <benefício>"
+      placeholder: |
+        Exemplo:
+        Como cliente do marketplace
+        Quero poder adicionar produtos ao carrinho
+        Para finalizar minha compra com vários itens
+    validations:
+      required: true
+
+  - type: textarea
+    id: notas
+    attributes:
+      label: 📝 Notas adicionais
+      description: Regras de negócio, dependências ou observações
+      placeholder: "Ex: A funcionalidade depende do endpoint /api/cart"
