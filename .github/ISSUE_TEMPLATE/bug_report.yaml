@@ -1,66 +1,64 @@
 name: Bug Report
-description: Relatar um bug encontrado durante os testes
-title: "[BUG]: "
-labels: ["bug"]
-assignees: []
-
+description: File a bug report.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+projects: ["octo-org/1", "octo-org/44"]
+assignees:
+  - octocat
 body:
-  - type: textarea
-    id: descricao
+  - type: markdown
     attributes:
-      label: 📝 Descrição
-      description: Explique brevemente o bug encontrado
-      placeholder: "Ex: Ao tentar cadastrar um produto com nome em branco, o sistema exibe erro 500."
-    validations:
-      required: true
-
-  - type: textarea
-    id: ambiente
-    attributes:
-      label: 🌍 Ambiente
-      description: Informe onde o bug ocorreu
-      placeholder: "Ex: Navegador Chrome v117 / API em homologação"
-    validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: 📌 Passos para reproduzir (Gherkin)
-      description: Descreva o bug usando linguagem Gherkin (Cucumber)
-      placeholder: |
-        ```gherkin
-        Feature: Cadastro de Produto
-          Scenario: Tentativa de cadastro com nome vazio
-            Given que estou na tela de cadastro de produto
-            When preencho o campo "nome" em branco
-            And clico no botão "Salvar"
-            Then deve ser exibida a mensagem de erro "O campo nome é obrigatório"
-        ```
-    validations:
-      required: true
-
-  - type: textarea
-    id: esperado
-    attributes:
-      label: ✅ Resultado Esperado
-      description: O que deveria acontecer?
-      placeholder: "Ex: O sistema deve impedir o cadastro e exibir mensagem clara de validação."
-    validations:
-      required: true
-
-  - type: textarea
-    id: atual
-    attributes:
-      label: ❌ Resultado Atual
-      description: O que aconteceu de fato?
-      placeholder: "Ex: O sistema retornou erro 500 no backend."
-    validations:
-      required: true
-
+      value: |
+        Thanks for taking the time to fill out this bug report!
   - type: input
-    id: evidencia
+    id: contact
     attributes:
-      label: 📎 Evidências
-      description: Se possível, adicione prints, logs ou links de vídeo.
-      placeholder: "URL ou caminho do arquivo"
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of our software are you running?
+      options:
+        - 1.0.2 (Default)
+        - 1.0.3 (Edge)
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: What browsers are you seeing the problem on?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com). 
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
