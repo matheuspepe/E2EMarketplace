@@ -1,0 +1,67 @@
+# .github/ISSUE_TEMPLATE/bug-report.yml
+name: "🐞 Bug Report"
+description: "Relatar um bug encontrado durante os testes"
+title: "[BUG] <Título curto e objetivo>"
+labels: ["bug", "QA"]
+assignees: []
+
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: 📝 Descrição
+      description: Explique brevemente o bug encontrado
+      placeholder: "Ex: Ao tentar cadastrar um produto com nome em branco, o sistema exibe erro 500."
+    validations:
+      required: true
+
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: 🌍 Ambiente
+      description: Informe onde o bug ocorreu
+      placeholder: "Ex: Navegador Chrome v117 / API em homologação"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 📌 Passos para reproduzir (Gherkin)
+      description: Descreva o bug usando linguagem Gherkin (Cucumber)
+      placeholder: |
+        ```gherkin
+        Feature: Cadastro de Produto
+          Scenario: Tentativa de cadastro com nome vazio
+            Given que estou na tela de cadastro de produto
+            When preencho o campo "nome" em branco
+            And clico no botão "Salvar"
+            Then deve ser exibida a mensagem de erro "O campo nome é obrigatório"
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: ✅ Resultado Esperado
+      description: O que deveria acontecer?
+      placeholder: "Ex: O sistema deve impedir o cadastro e exibir mensagem clara de validação."
+    validations:
+      required: true
+
+  - type: textarea
+    id: atual
+    attributes:
+      label: ❌ Resultado Atual
+      description: O que aconteceu de fato?
+      placeholder: "Ex: O sistema retornou erro 500 no backend."
+    validations:
+      required: true
+
+  - type: input
+    id: evidencia
+    attributes:
+      label: 📎 Evidências
+      description: Se possível, adicione prints, logs ou links de vídeo.
+      placeholder: "URL ou caminho do arquivo"

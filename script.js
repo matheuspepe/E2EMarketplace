@@ -254,14 +254,8 @@ function seedIfEmpty() {
       { id: crypto.randomUUID(), nomeLoja: 'Casa & Conforto ME', cnpj: '98.765.432/0001-10', contato: 'vendas@casaeconforto.com' },
     ];
 
-    // Products (5)
-    produtos = [
-      { id: crypto.randomUUID(), nome: 'Smartphone 128GB', categoria: 'Eletrônicos', preco: 1799.90, estoque: 25, descricao: 'Tela 6.5", câmera dupla, bateria 5000mAh', imagem: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fget.pxhere.com%2Fphoto%2Fsmartphone-mobile-screen-technology-telephone-communication-gadget-mobile-phone-brand-product-electronics-digital-iphone6-multimedia-electronic-device-portable-communications-device-communication-device-feature-phone-1061929.jpg&f=1&nofb=1&ipt=78ea1a7a075c0a838a3e8ddccd85f2cafa29bac9a8af9dd5ce362e765fcff481', ativo: true, fornecedorId: fornecedores[0].id },
-      { id: crypto.randomUUID(), nome: 'Notebook 15" i5', categoria: 'Informática', preco: 3499.00, estoque: 12, descricao: '8GB RAM, SSD 256GB, Windows 11', imagem: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fpicjumbo.com%2Fwp-content%2Fuploads%2Fmodern-laptop-on-wooden-desk-2210x1473.jpg&f=1&nofb=1&ipt=2dd11b93bbbfe22f64ce57f49577da255b803643824d8e1885168bf182df953f', ativo: true, fornecedorId: fornecedores[0].id },
-      { id: crypto.randomUUID(), nome: 'Fone Bluetooth', categoria: 'Acessórios', preco: 299.90, estoque: 60, descricao: 'Cancelamento de ruído, 30h de bateria', imagem: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fthumbs.dreamstime.com%2Fb%2Fblack-bluetooth-headphone-white-background-374405027.jpg&f=1&nofb=1&ipt=779b62c6fb73831ccead87e7b0c42556eb68010a9e3555499ba44d96d6cae409', ativo: true, fornecedorId: fornecedores[0].id },
-      { id: crypto.randomUUID(), nome: 'Liquidificador 900W', categoria: 'Eletroportáteis', preco: 219.00, estoque: 30, descricao: 'Copo de 2L, 12 velocidades', imagem: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fthumbs.dreamstime.com%2Fb%2Felectric-blender-25179381.jpg&f=1&nofb=1&ipt=8e4245fb3c3c34608b73f2a30f80e15865ffe8b12114e285f515b1c3c8829135', ativo: true, fornecedorId: fornecedores[1].id },
-      { id: crypto.randomUUID(), nome: 'Travesseiro Ortopédico', categoria: 'Casa', preco: 149.90, estoque: 44, descricao: 'Espuma viscoelástica, antiácaro', imagem: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fthumbs.dreamstime.com%2Fb%2Forthopedic-pillow-bed-333745847.jpg&f=1&nofb=1&ipt=373033a37905a99b0958b0c051d1f3e591fde4743fd04e6a76cc6e4b31467cc3', ativo: true, fornecedorId: fornecedores[1].id },
-    ];
+    // Products array - now populated from API only
+    produtos = [];
 
     Storage.set('seeded_v1', true);
     persistAll();
@@ -378,6 +372,257 @@ let _apiProductsLoaded = false;
 // Categories allowed by the external API
 const ALLOWED_API_CATEGORIES = new Set(['moda','esportes','casa','eletronicos']);
 
+// Mapeamento de imagens por categoria e palavras-chave
+const PRODUCT_IMAGES = {
+  'eletronicos': {
+    default: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=500&q=80',
+    subcategories: {
+      'TV': {
+        default: 'https://media.istockphoto.com/id/2164710012/pt/foto/new-smart-tv.jpg?s=612x612&w=0&k=20&c=q6vmEzC99LZP54tL7Vb8N_zEtmFjvibf7P30a2IHlZk=',
+        keywords: {
+          'lenovo': 'https://media.stockinthechannel.com/pic/88_Oh7AffUaposy0snCmOw.r.jpg'
+        }
+      },
+      'smartphone': {
+        default: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'iphone': 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?auto=format&fit=crop&w=500&q=80',
+          'samsung': 'https://images.unsplash.com/photo-1610945264803-c22b62d2a7b3?auto=format&fit=crop&w=500&q=80',
+          'lenovo': 'https://www.droid-life.com/wp-content/uploads/2017/08/lenovo-k8-note2.jpg'
+        }
+      },
+      'computadores': {
+        default: 'https://images.unsplash.com/photo-1537498425277-c283d32ef9db?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'notebook acer': 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?auto=format&fit=crop&w=500&q=80',
+          'notebook xiaomi': 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fgazettereview.com%2Fwp-content%2Fuploads%2F2017%2F06%2FScreen-Shot-2017-06-05-at-1.52.35-PM.png&f=1&nofb=1&ipt=b5b785fead3bafd40f94ba57ce2d80b1b978c28e5191d56f0c4470c8615cd857',
+          'macbook': 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=500&q=80',
+          'desktop': 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=500&q=80',
+          'monitor dell': 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.bhphotovideo.com%2Fimages%2Fimages2500x2500%2Fdell_u2417h_24_16_9_ips_1222870.jpg&f=1&nofb=1&ipt=96fb9694041d73b64d9b3c1c1e436b299ea5f16cb044a5e5d5e2ec58f1d4648d',
+          'monitor sony': 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fimages.expertreviews.co.uk%2Fwp-content%2Fuploads%2Fimages%2Fdir_410%2Fer_photo_205444.png&f=1&nofb=1&ipt=177c2ef8f43fa40cc120255ec28aedc80fcaac212ac7518a3d6650a50a574db4',
+          'monitor philips': 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.cultofmac.com%2Fwp-content%2Fuploads%2F2023%2F08%2FPhilips-Creator-Series-27E2F7901-1536x1021.jpg&f=1&nofb=1&ipt=b2699e2202ecfefb6151d51ef2348de85b1b579b2b66b5c47ff1eb599e1afe87',
+          'monitor': 'https://images.unsplash.com/photo-1585792180666-f7347c490ee2?auto=format&fit=crop&w=500&q=80',
+        }
+      },
+      'audio': {
+        default: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'fone': 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=500&q=80',
+          'headphone': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80',
+          'airpods': 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=500&q=80',
+          'caixa som': 'https://images.unsplash.com/photo-1612444530582-fc66183b16f7?auto=format&fit=crop&w=500&q=80',
+          'bluetooth': 'https://images.unsplash.com/photo-1578319439584-104c94d37305?auto=format&fit=crop&w=500&q=80',
+          'wireless': 'https://images.unsplash.com/photo-1563627806991-23c83d95eb92?auto=format&fit=crop&w=500&q=80',
+          'xiaomi': 'https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=500&q=80'
+        }
+      }
+    }
+  },
+  'moda': {
+    default: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=500&q=80',
+    subcategories: {
+      'roupas': {
+        default: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'camiseta': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=500&q=80',
+          'camisa': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=500&q=80',
+          'calca': 'https://images.unsplash.com/photo-1604176354204-9268737828e4?auto=format&fit=crop&w=500&q=80',
+          'jeans': 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=500&q=80',
+          'vestido': 'https://images.unsplash.com/photo-1612336307429-8a898d10e223?auto=format&fit=crop&w=500&q=80',
+          'blusa': 'https://images.unsplash.com/photo-1551048632-24e444b48a3e?auto=format&fit=crop&w=500&q=80',
+          'jaqueta': 'https://media.istockphoto.com/id/1366575695/pt/foto/blank-black-windbreaker-mock-up-front-and-back-view.jpg?s=612x612&w=0&k=20&c=bkLfDpu5EY2MT_D-m7xhhgAb-TZqN98PLnVJVJd9DOg='
+        }
+      },
+      'calcados': {
+        default: 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'tenis': 'https://images.unsplash.com/photo-1597248881519-db089d3744a5?auto=format&fit=crop&w=500&q=80',
+          'nike': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
+          'adidas': 'https://images.unsplash.com/photo-1617689563472-c66767966822?auto=format&fit=crop&w=500&q=80',
+          'sapato': 'https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=500&q=80'
+        }
+      },
+      'acessorios': {
+        default: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'relogio': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=500&q=80',
+          'apple watch': 'https://images.unsplash.com/photo-1551816230-ef5deaed4a26?auto=format&fit=crop&w=500&q=80',
+          'bolsa': 'https://images.unsplash.com/photo-1601369447437-c1c7e604de70?auto=format&fit=crop&w=500&q=80',
+          'colar': 'https://images.unsplash.com/photo-1615655114865-4cc1bda5901e?auto=format&fit=crop&w=500&q=80',
+          'anel': 'https://images.unsplash.com/photo-1598560917807-1bae44bd2be8?auto=format&fit=crop&w=500&q=80'
+        }
+      }
+    }
+  },
+  'esportes': {
+    default: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=500&q=80',
+    subcategories: {
+      'fitness': {
+        default: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'peso': 'https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?auto=format&fit=crop&w=500&q=80',
+          'halter': 'https://images.unsplash.com/photo-1574108397771-54bac27968ea?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+          'elastico': 'https://images.unsplash.com/photo-1620188467120-5042ed1eb5da?auto=format&fit=crop&w=500&q=80',
+          'yoga': 'https://images.unsplash.com/photo-1588286840104-8957b019727f?auto=format&fit=crop&w=500&q=80',
+          'skate': 'https://plus.unsplash.com/premium_photo-1673378963667-fac1c7be88ca?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+        }
+      },
+      'esportes coletivos': {
+        default: 'https://images.unsplash.com/photo-1577471489310-ba3c0811f89c?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'bola futebol': 'https://images.unsplash.com/photo-1552318965-6e6be7484ada?auto=format&fit=crop&w=500&q=80',
+          'bola basquete': 'https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=500&q=80',
+          'bola volei': 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=500&q=80'
+        }
+      },
+      'ciclismo': {
+        default: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'bike': 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=500&q=80',
+          'bicicleta': 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=500&q=80',
+          'capacete': 'https://images.unsplash.com/photo-1606986632257-22e3c82a7c8a?auto=format&fit=crop&w=500&q=80',
+          'mountain bike': 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=500&q=80'
+        }
+      }
+    }
+  },
+  'casa': {
+    default: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=500&q=80',
+    subcategories: {
+      'moveis': {
+        default: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'sofa': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=500&q=80',
+          'mesa jantar': 'https://images.unsplash.com/photo-1615066390804-d1d0562f1df5?auto=format&fit=crop&w=500&q=80',
+          'mesa centro': 'https://images.unsplash.com/photo-1499933374294-4584851497cc?auto=format&fit=crop&w=500&q=80',
+          'cadeira': 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=500&q=80',
+          'poltrona': 'https://images.unsplash.com/photo-1619472351888-f106a150d965?auto=format&fit=crop&w=500&q=80',
+          'guarda roupa': 'https://images.unsplash.com/photo-1631679706909-1844bbd07221?auto=format&fit=crop&w=500&q=80'
+        }
+      },
+      'cozinha': {
+        default: 'https://images.unsplash.com/photo-1556909212-d5b604d0c90d?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'panela': 'https://images.unsplash.com/photo-1592150621744-aca64f48394a?auto=format&fit=crop&w=500&q=80',
+          'liquidificador': 'https://plus.unsplash.com/premium_photo-1681826671576-8d612accc77a?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+          'philco': 'https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=500&q=80',
+          'air fryer': 'https://media.istockphoto.com/id/1201141649/photo/airfryer-isolated.jpg?s=612x612&w=0&k=20&c=ekL_tqETdNKm5oV1U_Q5h3fjXQXWWt7XCFWYrf4HRxs=',
+          'airfryer': 'https://media.istockphoto.com/id/1201141649/photo/airfryer-isolated.jpg?s=612x612&w=0&k=20&c=ekL_tqETdNKm5oV1U_Q5h3fjXQXWWt7XCFWYrf4HRxs=',
+          'mixer': 'https://images.unsplash.com/photo-1612181346599-a6bffc4e9915?auto=format&fit=crop&w=500&q=80',
+          'cafeteira': 'https://market-resized.envatousercontent.com/photodune.net/EVA/TRX/b7/90/3b/ca/8d/v1_E10/E106DWTL.jpg?auto=format&q=94&mark=https%3A%2F%2Fassets.market-storefront.envato-static.com%2Fwatermarks%2Fphoto-260724.png&opacity=0.2&cf_fit=cover&w=590&s=74772d3c435d8cd6c00941deb7d79c99d97f6a0ba04a5d08c8238056d822806d'
+        }
+      },
+      'decoracao': {
+        default: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=500&q=80',
+        keywords: {
+          'luminaria': 'https://images.unsplash.com/photo-1573148164257-4f4b5873b075?auto=format&fit=crop&w=500&q=80',
+          'tapete': 'https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&w=500&q=80',
+          'cortina': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=500&q=80',
+          'almofada': 'https://images.unsplash.com/photo-1579656381226-5fc0f0100c3b?auto=format&fit=crop&w=500&q=80'
+        }
+      },
+        'eletrônicos': {
+        default: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Flistastops.com.br%2Fwp-content%2Fuploads%2F2023%2F07%2F3-eletrodomesticos-praticos-para-ter-em-casa-1-jpg.webp&f=1&nofb=1&ipt=939f6dcd9deaa37ead3f8fe93562709e0fa9b940ebeec9d0d0b2b113ead22e8c',
+        keywords: {
+          'aspirador robô': 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.shutterstock.com%2Fimage-photo%2Ffloor-washing-robot-interior-600nw-1514321564.jpg&f=1&nofb=1&ipt=516ecf1a1c23c63c3aff0e91da432b43c0eba8337e3c52995859b3ac74fa65e4'
+        }
+      }
+    }
+  }
+};
+
+// Função para encontrar a melhor imagem para um produto
+function findProductImage(product) {
+  const category = normalizeCategory(product.categoria);
+  const categoryImages = PRODUCT_IMAGES[category];
+  
+  if (!categoryImages) return PRODUCT_IMAGES['eletronicos'].default; // Fallback para categoria padrão
+  
+  const nome = product.nome.toLowerCase();
+  // Remove acentos para melhor correspondência
+  const nomeNormalized = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+  // Helper: find a matching subcategory key from aliases (keeps original key casing)
+  const getSubcatKeyByAliases = (aliases = []) => {
+    if (!categoryImages.subcategories) return null;
+    const keys = Object.keys(categoryImages.subcategories);
+    const norm = s => String(s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+    for (const a of aliases) {
+      const aNorm = norm(a);
+      for (const k of keys) {
+        const kNorm = norm(k);
+        if (kNorm === aNorm || kNorm.includes(aNorm) || aNorm.includes(kNorm)) return k;
+      }
+    }
+    return null;
+  };
+
+  // Prioridade especial: para eletrônicos, se o nome indicar 'smartphone'/'celular'/'phone',
+  // force a imagem a partir da subcategoria 'smartphone' quando disponível.
+  if (category === 'eletronicos') {
+    if (/smartphone|smart phone|smartfone|celular|phone|mobile/.test(nomeNormalized)) {
+      const phoneKey = getSubcatKeyByAliases(['smartphone','smartphones','celular','celulares','phone','mobile']);
+      if (phoneKey) {
+        const sub = categoryImages.subcategories[phoneKey];
+        if (sub) {
+          // Try brand-specific keyword image first (e.g., 'lenovo' inside sub.keywords)
+          if (sub.keywords) {
+            for (const [kw, img] of Object.entries(sub.keywords)) {
+              const kNorm = String(kw || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+              if (!kNorm) continue;
+              if (nomeNormalized.includes(kNorm) || nomeNormalized.includes(kNorm.replace(/\s+/g, ''))) return img;
+            }
+          }
+          // Fallback to subcategory default image
+          if (sub.default) return sub.default;
+        }
+      }
+    }
+  }
+  
+  // Função auxiliar para verificar correspondência de palavra-chave
+  const matchesKeyword = (keyword, text) => {
+    const keywordNorm = keyword.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // Verifica variações comuns (com/sem espaços, plural/singular)
+    const variations = [
+      keywordNorm,
+      keywordNorm.replace(/\s+/g, ''),
+      keywordNorm + 's',
+      keywordNorm.replace(/s$/, '')
+    ];
+    return variations.some(v => text.includes(v));
+  };
+  
+  // Procura nas subcategorias
+  for (const [subcat, subcatData] of Object.entries(categoryImages.subcategories)) {
+    // Primeiro tenta encontrar palavras-chave específicas dentro da subcategoria
+    for (const [keyword, image] of Object.entries(subcatData.keywords)) {
+      if (matchesKeyword(keyword, nomeNormalized)) {
+        return image;
+      }
+    }
+    
+    // Se o nome do produto contém o nome da subcategoria, usa a imagem padrão da subcategoria
+    if (matchesKeyword(subcat, nomeNormalized) || 
+        Object.keys(subcatData.keywords).some(k => matchesKeyword(k, nomeNormalized))) {
+      return subcatData.default;
+    }
+  }
+  
+  // Se não encontrou nada específico, procura por palavras parciais nas keywords
+  for (const subcatData of Object.values(categoryImages.subcategories)) {
+    for (const [keyword, image] of Object.entries(subcatData.keywords)) {
+      // Verifica se qualquer parte do nome corresponde à palavra-chave
+      if (nomeNormalized.split(/\s+/).some(word => matchesKeyword(keyword, word))) {
+        return image;
+      }
+    }
+  }
+  
+  // Se ainda não encontrou nada, usa a imagem padrão da categoria
+  return categoryImages.default;
+}
+
 // Helper to normalize category strings (remove accents, lowercase)
 function normalizeCategory(s) {
   if (!s) return '';
@@ -463,7 +708,7 @@ async function renderProductsGrid() {
           descontoPercent: descontoPercent,
           estoque: (p.stock && (p.stock.quantity ?? p.stock.qtd)) || 0,
           descricao: p.description || p.descricao || '',
-          imagem: p.imageUrl || p.image || `https://via.placeholder.com/320x200?text=${encodeURIComponent(p.title || p.id)}`,
+          imagem: findProductImage({ nome: p.title || p.name || `Produto ${p.id}`, categoria: displayCat }),
           ativo: true,
           fornecedorId: null,
         };
