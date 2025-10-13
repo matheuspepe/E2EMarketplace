@@ -294,22 +294,43 @@ function validateFullName(name) {
   const words = name.trim().split(/\s+/);
   // Precisa ter pelo menos 2 palavras (nome e sobrenome)
   if (words.length < 2) return false;
-  // Regex que aceita letras, incluindo acentuadas, mas não números ou caracteres especiais
+  // Cada palavra deve ter pelo menos 2 caracteres
+  if (words.some(word => word.length < 2)) return false;
+  // Regex que aceita letras (incluindo acentuadas) mas não números ou símbolos
   const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+$/;
-  // Cada palavra deve ter pelo menos 2 letras e passar no regex
-  return words.every(word => word.length >= 2 && nameRegex.test(word));
+  // Cada palavra deve passar no regex
+  if (!words.every(word => nameRegex.test(word))) return false;
+  // Garante que tem pelo menos um nome e um sobrenome com mais de 2 caracteres cada
+  const [firstName, lastName] = words;
+  if (firstName.length < 2 || lastName.length < 2) return false;
+  return true;
 }
 
-// Função para validar formato de e-mail
-function validateEmail(email) {
+// Função para validar email com verificação de domínio
+async function validateEmail(email) {
   if (!email) return false;
-  // Regex que valida:
-  // - Deve ter caracteres antes do @
-  // - Deve ter um domínio após o @
-  // - Deve ter pelo menos uma extensão (.com, .br, etc)
+  
+  // Verifica formato básico do email
   // - A extensão deve ter entre 2 e 6 caracteres
   // - Aceita múltiplos níveis de domínio (.com.br, .edu.br, etc)
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\.[a-zA-Z]{2,6})?$/;
+  if (!emailRegex.test(email)) return false;
+  
+  // Extrai o domínio do email
+  const [, domain] = email.split('@');
+  
+  try {
+    // Verifica se o domínio existe usando DNS lookup
+    const response = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
+    const data = await response.json();
+    
+    // Se o domínio tem registros MX, é provavelmente válido
+    return data.Answer && data.Answer.length > 0;
+  } catch (error) {
+    // Em caso de erro na verificação, aceita o email se o formato básico estiver correto
+    console.warn('Erro na verificação de domínio:', error);
+    return emailRegex.test(email);
+  }
   return emailRegex.test(email);
 }
 
@@ -1216,8 +1237,9 @@ function setupRegisterFormValidation() {
     const email = emailInput.value.trim();
     clearFieldError(emailInput);
     if (email) {
-      if (!validateEmail(email)) {
-        showFieldError(emailInput, 'E-mail inválido. Use um formato válido (exemplo@dominio.com)');
+      const isValidEmail = await validateEmail(email);
+      if (!isValidEmail) {
+        showFieldError(emailInput, 'E-mail inválido. Use um domínio válido existente.');
       } else if (usuarios.some(u => u.email.toLowerCase() === email.toLowerCase())) {
         showFieldError(emailInput, 'Este e-mail já está cadastrado.');
       }
@@ -1260,9 +1282,10 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       return;
     }
     
-    // Validação do formato do e-mail
-    if (!validateEmail(email)) {
-      showFieldError(emailInput, 'E-mail inválido. Use um formato válido (exemplo@dominio.com)');
+    // Validação completa do e-mail (formato e domínio)
+    const isValidEmail = await validateEmail(email);
+    if (!isValidEmail) {
+      showFieldError(emailInput, 'E-mail inválido. Use um domínio válido existente.');
       return;
     }
     
